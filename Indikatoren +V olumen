@@ -1,0 +1,44 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Blumi303
+
+//@version=6
+strategy("Bitcoin Trading Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// === Indikatoren ===
+ema50 = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+rsi = ta.rsi(close, 14)
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+volMA = ta.sma(volume, 20)
+
+// === Bedingungen für Ein- und Ausstieg ===
+// Long Bedingung
+longCondition = ta.crossover(close, ema50) and close > ema200 and rsi > 50 and macdLine > signalLine and volume > volMA
+
+// Short Bedingung
+shortCondition = ta.crossunder(close, ema50) and close < ema200 and rsi < 50 and macdLine < signalLine and volume > volMA
+
+// Take Profit & Stop Loss
+atr = ta.atr(14)
+longSL = close - 1.5 * atr
+longTP = close + 3 * atr
+shortSL = close + 1.5 * atr
+shortTP = close - 3 * atr
+
+// === Strategie Orders ===
+if longCondition
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", from_entry="Long", stop=longSL, limit=longTP)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", from_entry="Short", stop=shortSL, limit=shortTP)
+
+// === Visualisierung ===
+plot(ema50, title="EMA 50", color=color.blue)
+plot(ema200, title="EMA 200", color=color.red)
+
+plotshape(series=longCondition, location=location.belowbar, color=color.green, style=shape.labelup, title="BUY Signal")
+plotshape(series=shortCondition, location=location.abovebar, color=color.red, style=shape.labeldown, title="SELL Signal")
+
+
