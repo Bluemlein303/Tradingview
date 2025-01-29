@@ -1,0 +1,39 @@
+//@version=5
+indicator("Bitcoin Trading Signals", overlay=true)
+
+// Indikatoren definieren
+lengthEMA = 50
+lengthSMA = 200
+src = close
+ema50 = ta.ema(src, lengthEMA)
+sma200 = ta.sma(src, lengthSMA)
+
+// RSI Indikator
+rsiLength = 14
+rsiOverbought = 70
+rsiOversold = 30
+rsi = ta.rsi(src, rsiLength)
+
+// MACD Indikator
+[macdLine, signalLine, _] = ta.macd(src, 12, 26, 9)
+
+// Bollinger Bands
+bbLength = 20
+bbMult = 2.0
+bbBasis = ta.sma(src, bbLength)
+bbUpper = bbBasis + bbMult * ta.stdev(src, bbLength)
+bbLower = bbBasis - bbMult * ta.stdev(src, bbLength)
+
+// Kauf- und Verkaufssignale definieren
+buySignal = ta.crossover(ema50, sma200) or (rsi < rsiOversold and ta.crossover(macdLine, signalLine)) or ta.crossover(src, bbLower)
+sellSignal = ta.crossunder(ema50, sma200) or (rsi > rsiOverbought and ta.crossunder(macdLine, signalLine)) or ta.crossunder(src, bbUpper)
+
+// Signale visualisieren
+plotshape(series=buySignal, location=location.belowbar, color=color.green, style=shape.labelup, size=size.small, title="BUY Signal")
+plotshape(series=sellSignal, location=location.abovebar, color=color.red, style=shape.labeldown, size=size.small, title="SELL Signal")
+
+// Indikatoren anzeigen
+plot(ema50, color=color.blue, title="EMA 50")
+plot(sma200, color=color.orange, title="SMA 200")
+plot(bbUpper, color=color.gray, title="Bollinger Upper")
+plot(bbLower, color=color.gray, title="Bollinger Lower")
