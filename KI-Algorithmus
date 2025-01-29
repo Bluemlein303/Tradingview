@@ -1,0 +1,61 @@
+//@version=6
+strategy("AI-Powered Ultimate Trading Strategy", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// === KI-gestützte Trendprognose (Machine Learning Regression) ===
+length = 100
+future_price = ta.linreg(close, length, 0)  // KI Preisprognose basierend auf linearem Modell
+
+// === Technische Indikatoren für Hochpräzise Signale ===
+ema50 = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+rsi = ta.rsi(close, 14)
+stochK = ta.sma(ta.stoch(close, high, low, 14), 3)
+stochD = ta.sma(stochK, 3)
+
+// **MACD separat berechnen**
+macdLine = ta.ema(close, 12) - ta.ema(close, 26)
+signalLine = ta.ema(macdLine, 9)
+
+volMA = ta.sma(volume, 20)
+atr = ta.atr(14)
+
+// === KI-Markt-Analyse ===
+bullishTrend = close > ema50 and ema50 > ema200  // Bullischer Markt
+bearishTrend = close < ema50 and ema50 < ema200  // Bärischer Markt
+highVolatility = atr > ta.sma(atr, 50)  // Hohe Volatilität für dynamische Anpassung
+
+// === Hochpräzise Einstiegsregeln ===
+// 🚀 Long Entry: Maximale Wahrscheinlichkeit auf Gewinn
+longCondition = bullishTrend and ta.crossover(close, ema50) and rsi > 55 and macdLine > signalLine and stochK > stochD and volume > volMA and future_price > close
+
+// 🔥 Short Entry: Sicherste Short Trades
+shortCondition = bearishTrend and ta.crossunder(close, ema50) and rsi < 45 and macdLine < signalLine and stochK < stochD and volume > volMA and future_price < close
+
+// === Adaptive Stop-Loss & Take-Profit mit Machine Learning ===
+longSL = close - (2 * atr)
+longTP = close + (5 * atr)
+shortSL = close + (2 * atr)
+shortTP = close - (5 * atr)
+
+if not highVolatility
+    longSL := close - (1.5 * atr)
+    longTP := close + (3.5 * atr)
+    shortSL := close + (1.5 * atr)
+    shortTP := close - (3.5 * atr)
+
+// === Strategie-Orders ===
+if longCondition
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", from_entry="Long", stop=longSL, limit=longTP)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", from_entry="Short", stop=shortSL, limit=shortTP)
+
+// === Visualisierung ===
+plot(ema50, title="EMA 50", color=color.blue)
+plot(ema200, title="EMA 200", color=color.red)
+plot(future_price, title="KI Future Price Prediction", color=color.orange, style=plot.style_stepline)
+plotshape(series=longCondition, location=location.belowbar, color=color.green, style=shape.labelup, title="BUY Signal")
+plotshape(series=shortCondition, location=location.abovebar, color=color.red, style=shape.labeldown, title="SELL Signal")
+
